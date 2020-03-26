@@ -14,25 +14,35 @@ class Scenario(BaseScenario):
     def make_world(self):
         world = World()
         # add agents
-        world.agents = [Agent() for i in range(1)]
+        num_agents = 2
+        world.num_agents = num_agents
+        num_adversaries = 1
+
+        world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
             agent.name = 'agent %d' % i
             agent.collide = False
             agent.silent = True
-        # add landmarks
-        world.landmarks = [Landmark() for i in range(1)]
-        for i, landmark in enumerate(world.landmarks):
-            landmark.name = 'landmark %d' % i
-            landmark.collide = False
-            landmark.movable = False
+            agent.adversary = True if i < num_adversaries else False
+            agent.size = 0.05
+
+        ball = Landmark()
+        ball.name = 'ball'
+        ball.size = .02
+        ball.max_speed = 30
+        ball.collide = False
+        ball.movable = True
+        world.landmarks.append(ball)
+        self.ball = ball
         # make initial conditions
         self.reset_world(world)
         return world
 
     def reset_world(self, world):
         # random properties for agents
-        for i, agent in enumerate(world.agents):
-            agent.color = np.array([0.25,0.25,0.25])
+        world.agents[0].color = np.array([0.85, 0.35, 0.35])
+        for i in range(1, world.num_agents):
+            world.agents[i].color = np.array([0.35, 0.35, 0.85])
         # random properties for landmarks
         for i, landmark in enumerate(world.landmarks):
             landmark.color = np.array([0.75,0.75,0.75])
@@ -45,12 +55,41 @@ class Scenario(BaseScenario):
         for i, landmark in enumerate(world.landmarks):
             landmark.state.p_pos = np.random.uniform(-1,+1, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
+        self.ball.state.p_pos = [0, 0]
 
     def reward(self, agent, world):
-        dist2 = np.sum(np.square(agent.state.p_pos - world.landmarks[0].state.p_pos))
-        if dist2 <= np.square(agent.size + world.landmarks[0].size):
+        return self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
+
+    def agent_reward(self, agent, world):
+        # goal
+        if self.ball.state.p_pos[1] > .97 and self.ball.state.p_pos[0] > -.25 and self.ball.state.p_pos[0] < .25:
+            return 10000
+
+        gate_pos = [0, 1]
+        ball_gate_sq_dist = np.sum(np.square(self.ball.state.p_pos - gate_pos))
+
+        # agent-ball
+        ball_agent_sq_dist = np.sum(np.square(self.ball.state.p_pos - agent.state.p_pos))
+        is_close = np.square(self.ball.size + agent.size) >= ball_agent_sq_dist
+        if is_close:
             return 10
-        return -dist2
+
+        return -5 * ball_gate_sq_dist - ball_agent_sq_dist
+
+    def adversary_reward(self, agent, world):
+        if self.ball.state.p_pos[1] < -.97 and self.ball.state.p_pos[0] > -.25 and self.ball.state.p_pos[0] < .25:
+            return 10000
+
+        gate_pos = [0, -1]
+        ball_gate_sq_dist = np.sum(np.square(self.ball.state.p_pos - gate_pos))
+
+        # agent-ball
+        ball_agent_sq_dist = np.sum(np.square(self.ball.state.p_pos - agent.state.p_pos))
+        is_close = np.square(self.ball.size + agent.size) >= ball_agent_sq_dist
+        if is_close:
+            return 10
+
+        return -5 * ball_gate_sq_dist - ball_agent_sq_dist
 
     def observation(self, agent, world):
         # get positions of all entities in this agent's reference frame
