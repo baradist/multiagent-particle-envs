@@ -1,6 +1,7 @@
 import numpy as np
 from multiagent.core import World, Agent, Landmark
 from multiagent.football.football_environment import FootballEnvironment
+from multiagent.football.gate import Gate
 from multiagent.scenario import BaseScenario
 
 class Scenario(BaseScenario):
@@ -15,8 +16,10 @@ class Scenario(BaseScenario):
         world = World()
         # add agents
         num_agents = 2
-        world.num_agents = num_agents
         num_adversaries = 1
+        world.num_agents = num_agents
+
+        # world.collaborative = True
 
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
@@ -25,6 +28,9 @@ class Scenario(BaseScenario):
             agent.silent = True
             agent.adversary = True if i < num_adversaries else False
             agent.size = 0.05
+        for i in range(world.num_agents):
+            world.agents[i].color = np.array([0.35, 0.35, 0.85]) if world.agents[i].adversary \
+                else np.array([0.85, 0.35, 0.35])
 
         ball = Landmark()
         ball.name = 'ball'
@@ -34,28 +40,32 @@ class Scenario(BaseScenario):
         ball.movable = True
         world.landmarks.append(ball)
         self.ball = ball
+
+        self.gate_adv = Gate()
+        self.gate_adv.state.p_pos = np.array([0, 1])
+        world.landmarks.append(self.gate_adv)
+        self.gate_agent = Gate()
+        self.gate_agent.state.p_pos = np.array([0, -1])
+        world.landmarks.append(self.gate_agent)
         # make initial conditions
         self.reset_world(world)
         return world
 
     def reset_world(self, world):
-        # random properties for agents
-        world.agents[0].color = np.array([0.85, 0.35, 0.35])
-        for i in range(1, world.num_agents):
-            world.agents[i].color = np.array([0.35, 0.35, 0.85])
         # random properties for landmarks
-        for i, landmark in enumerate(world.landmarks):
-            landmark.color = np.array([0.75,0.75,0.75])
-        world.landmarks[0].color = np.array([0.75,0.25,0.25])
+        # for i, landmark in enumerate(world.landmarks):
+        #     landmark.color = np.array([0.75,0.75,0.75])
+        world.landmarks[0].color = np.array([0.75,0.25,0.25]) # self.ball
         # set random initial states
         for agent in world.agents:
             agent.state.p_pos = np.random.uniform(-1,+1, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
-        for i, landmark in enumerate(world.landmarks):
-            landmark.state.p_pos = np.random.uniform(-1,+1, world.dim_p)
-            landmark.state.p_vel = np.zeros(world.dim_p)
-        self.ball.state.p_pos = [0, 0]
+        # for i, landmark in enumerate(world.landmarks):
+        #     landmark.state.p_pos = np.random.uniform(-1,+1, world.dim_p)
+        #     landmark.state.p_vel = np.zeros(world.dim_p)
+        self.ball.state.p_pos = np.array([0., 0.])
+        self.ball.state.p_vel = np.array([0., 0.])
 
     def reward(self, agent, world):
         return self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
