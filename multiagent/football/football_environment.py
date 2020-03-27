@@ -7,6 +7,9 @@ from multiagent.environment import MultiAgentEnv
 
 # environment for all agents in the multiagent world
 # currently code assumes that no agents will be created/destroyed at runtime!
+from multiagent.football.gate import Gate
+
+
 class FootballEnvironment(MultiAgentEnv):
     def __init__(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
@@ -26,8 +29,6 @@ class FootballEnvironment(MultiAgentEnv):
                 self._set_action(action_n[i], agent, self.action_space[i])
             # advance world state
             self.world.step()
-            for i, agent in enumerate(self.agents):
-                self.process_ball(agent)
             # record observation for each agent
             for agent in self.agents:
                 obs_n.append(self._get_obs(agent))
@@ -43,24 +44,71 @@ class FootballEnvironment(MultiAgentEnv):
 
             return obs_n, reward_n, done_n, info_n
 
-    def process_ball(self, agent):
-        ball = self.world.landmarks[0]
-        is_close, dist, hypot = close_to_each_other(agent, ball)
-        if is_close:
-            # move the ball, so that not to intersect
-            ball.state.p_pos[0] = agent.state.p_pos[0] \
-                                  - (agent.state.p_pos[0] - ball.state.p_pos[0]) * hypot / dist
-            ball.state.p_pos[1] = agent.state.p_pos[1] \
-                                  - (agent.state.p_pos[1] - ball.state.p_pos[1]) * hypot / dist
-            # kick the ball
-            agent_abs_vel = ball.max_speed * math.sqrt(
-                agent.state.p_vel[0] * agent.state.p_vel[0] + agent.state.p_vel[1] * agent.state.p_vel[1])
-            ball.state.p_vel[0] += (ball.state.p_pos[0] - agent.state.p_pos[0]) * agent_abs_vel
-            ball.state.p_vel[1] += (ball.state.p_pos[1] - agent.state.p_pos[1]) * agent_abs_vel
+    # render environment
+    def render(self, mode='human'):
+        if mode == 'human':
+            alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            message = ''
+            for agent in self.world.agents:
+                comm = []
+                for other in self.world.agents:
+                    if other is agent: continue
+                    if np.all(other.state.c == 0):
+                        word = '_'
+                    else:
+                        word = alphabet[np.argmax(other.state.c)]
+                    message += (other.name + ' to ' + agent.name + ': ' + word + '   ')
+            # print(message)
 
-def close_to_each_other(agent, ball):
-    x = abs(agent.state.p_pos[0] - ball.state.p_pos[0])
-    y = abs(agent.state.p_pos[1] - ball.state.p_pos[1])
-    hypot = agent.size + ball.size
-    distance = math.sqrt(x * x + y * y)
-    return distance < hypot, distance, hypot
+        for i in range(len(self.viewers)):
+            # create viewers (if necessary)
+            if self.viewers[i] is None:
+                # import rendering only if we need it (and don't import for headless machines)
+                #from gym.envs.classic_control import rendering
+                from multiagent import rendering
+                self.viewers[i] = rendering.Viewer(700,700)
+
+        # create rendering geometry
+        if self.render_geoms is None:
+            # import rendering only if we need it (and don't import for headless machines)
+            #from gym.envs.classic_control import rendering
+            from multiagent import rendering
+            self.render_geoms = []
+            self.render_geoms_xform = []
+            for entity in self.world.entities:
+                if issubclass(type(entity), Gate): # TODO: Rectangle instead of Gate
+                    geom = rendering.make_polygon(entity.v)
+                else:
+                    geom = rendering.make_circle(entity.size)
+                xform = rendering.Transform()
+                if 'agent' in entity.name:
+                    geom.set_color(*entity.color, alpha=0.5)
+                else:
+                    geom.set_color(*entity.color)
+                geom.add_attr(xform)
+                self.render_geoms.append(geom)
+                self.render_geoms_xform.append(xform)
+
+            # add geoms to viewer
+            for viewer in self.viewers:
+                viewer.geoms = []
+                for geom in self.render_geoms:
+                    viewer.add_geom(geom)
+
+        results = []
+        for i in range(len(self.viewers)):
+            from multiagent import rendering
+            # update bounds to center around agent
+            cam_range = 1
+            if self.shared_viewer:
+                pos = np.zeros(self.world.dim_p)
+            else:
+                pos = self.agents[i].state.p_pos
+            self.viewers[i].set_bounds(pos[0]-cam_range,pos[0]+cam_range,pos[1]-cam_range,pos[1]+cam_range)
+            # update geometry positions
+            for e, entity in enumerate(self.world.entities):
+                self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
+            # render to display or array
+            results.append(self.viewers[i].render(return_rgb_array = mode=='rgb_array'))
+
+        return results

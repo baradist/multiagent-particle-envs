@@ -26,7 +26,7 @@ class Scenario(BaseScenario):
         world = World()
         # add agents
         num_agents = 1
-        num_adversaries = 1
+        num_adversaries = 0
         world.num_agents = num_agents
 
         # world.collaborative = True
@@ -34,20 +34,22 @@ class Scenario(BaseScenario):
         world.agents = [Agent() for i in range(num_agents)]
         for i, agent in enumerate(world.agents):
             agent.name = 'agent %d' % i
-            agent.collide = False
+            agent.collide = True
             agent.silent = True
             agent.adversary = True if i < num_adversaries else False
-            agent.size = 0.05
+            agent.size = 0.1
+            agent.initial_mass = 5
         for i in range(world.num_agents):
-            world.agents[i].color = np.array([0.35, 0.35, 0.85]) if world.agents[i].adversary \
-                else np.array([0.85, 0.35, 0.35])
+            world.agents[i].color = np.array([0.85, 0.35, 0.35]) if world.agents[i].adversary \
+                else np.array([0.35, 0.35, 0.85])
 
         ball = Landmark()
         ball.name = 'ball'
-        ball.size = .02
+        ball.size = .1
         ball.max_speed = 30
-        ball.collide = False
+        ball.collide = True
         ball.movable = True
+        ball.initial_mass = .2
         world.landmarks.append(ball)
         self.ball = ball
 

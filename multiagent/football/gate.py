@@ -11,7 +11,7 @@ class Gate(Entity):
         h_half = self.height / 2
         self.v = [[-w_half, -h_half], [-w_half, h_half], [w_half, h_half], [w_half, -h_half]]
 
-        # self.collide = False
+        self.collide = False
 
         self.color = np.array([0.75, 0.75, 0.25])
         self.state.p_vel = np.array([0., 0.])
