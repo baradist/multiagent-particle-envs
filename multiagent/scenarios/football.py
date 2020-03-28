@@ -25,8 +25,8 @@ class Scenario(BaseScenario):
     def make_world(self):
         world = World()
         # add agents
-        num_agents = 1
-        num_adversaries = 0
+        num_agents = 2
+        num_adversaries = 1
         world.num_agents = num_agents
 
         # world.collaborative = True
