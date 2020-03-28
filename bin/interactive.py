@@ -18,7 +18,10 @@ if __name__ == '__main__':
     # create world
     world = scenario.make_world()
     # create multiagent environment
-    env = scenario.get_env(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None, shared_viewer = False)
+    # env = scenario.get_env(world, scenario.reset_world, scenario.reward, scenario.observation,\
+    #                        info_callback=None, shared_viewer = False)
+    env = scenario.get_env(world, scenario.reset_world, scenario.reward, scenario.observation, \
+                       done_callback=scenario.done)
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
     # create interactive policies for each agent
@@ -34,6 +37,8 @@ if __name__ == '__main__':
         obs_n, reward_n, done_n, _ = env.step(act_n)
         # render all agent views
         env.render()
+        if all(done_n):
+            env.reset()
         # display rewards
         #for agent in env.world.agents:
         #    print(agent.name + " reward: %0.3f" % env._get_reward(agent))

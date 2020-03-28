@@ -39,6 +39,7 @@ class Scenario(BaseScenario):
             agent.adversary = True if i < num_adversaries else False
             agent.size = 0.1
             agent.initial_mass = 5
+            agent.max_speed = 5
         for i in range(world.num_agents):
             world.agents[i].color = np.array([0.85, 0.35, 0.35]) if world.agents[i].adversary \
                 else np.array([0.35, 0.35, 0.85])
@@ -76,6 +77,7 @@ class Scenario(BaseScenario):
 
         self.ball.state.p_pos = np.array([0., 0.])
         self.ball.state.p_vel = np.array([0., 0.])
+        self.is_done = False
 
     def reward(self, agent, world):
         return self.agent_reward(agent, self.gate_agent, self.gate_adv) if agent.adversary \
@@ -84,10 +86,15 @@ class Scenario(BaseScenario):
     def agent_reward(self, agent, gate, our_gate):
         # goal
         if goal(self.ball, gate):
+            self.is_done = True
             return 10000
         if goal(self.ball, our_gate):
+            self.is_done = True
             return -10000
         ball_pos = self.ball.state.p_pos
+        if any(ball_pos < [-1., -1.]) or any(ball_pos > [1., 1.]):
+            self.is_done = True
+            return -500 # TODO treat the agent who kicked out
         gate_pos = gate.state.p_pos
         ball_gate_sq_dist = np.sum(np.square(ball_pos - gate_pos))
 
@@ -105,3 +112,6 @@ class Scenario(BaseScenario):
         for entity in world.landmarks:
             entity_pos.append(entity.state.p_pos - agent.state.p_pos)
         return np.concatenate([agent.state.p_vel] + entity_pos)
+
+    def done(self, agent, world):
+        return self.is_done
