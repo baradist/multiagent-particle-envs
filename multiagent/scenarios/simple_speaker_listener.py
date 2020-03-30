@@ -63,7 +63,12 @@ class Scenario(BaseScenario):
     def reward(self, agent, world):
         # squared distance from listener to landmark
         a = world.agents[0]
+
         dist2 = np.sum(np.square(a.goal_a.state.p_pos - a.goal_b.state.p_pos))
+        is_close = np.square(a.goal_a.size + a.goal_b.size) >= dist2
+        if is_close:
+            return 10
+
         return -dist2
 
     def observation(self, agent, world):
