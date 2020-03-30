@@ -10,8 +10,8 @@ def goal(ball, gate):
     gate_pos = gate.state.p_pos
     gate_half_width = gate.width / 2
     gate_half_height = gate.height / 2
-    return ball_pos[0] > gate_pos[0] - gate_half_width and ball_pos[0] < gate_pos[0] + gate_half_width \
-            and ball_pos[1] > gate_pos[1] - gate_half_height and ball_pos[1] < gate_pos[1] + gate_half_height
+    return gate_pos[0] - gate_half_width < ball_pos[0] < gate_pos[0] + gate_half_width \
+           and gate_pos[1] - gate_half_height < ball_pos[1] < gate_pos[1] + gate_half_height
 
 
 class Scenario(BaseScenario):
@@ -94,7 +94,7 @@ class Scenario(BaseScenario):
         ball_pos = self.ball.state.p_pos
         if any(ball_pos < [-1., -1.]) or any(ball_pos > [1., 1.]):
             self.is_done = True
-            return -500 # TODO treat the agent who kicked out
+            # return -500 # TODO treat the agent who kicked out
         gate_pos = gate.state.p_pos
         ball_gate_sq_dist = np.sum(np.square(ball_pos - gate_pos))
 
