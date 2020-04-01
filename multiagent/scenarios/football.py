@@ -110,8 +110,17 @@ class Scenario(BaseScenario):
         # get positions of all entities in this agent's reference frame
         entity_pos = []
         for entity in world.landmarks:
+            # if not entity.boundary:
             entity_pos.append(entity.state.p_pos - agent.state.p_pos)
-        return np.concatenate([agent.state.p_vel] + entity_pos)
+        # communication of all other agents
+        other_pos = []
+        other_vel = []
+        for other in world.agents:
+            if other is agent: continue
+            other_pos.append(other.state.p_pos - agent.state.p_pos)
+            # if not other.adversary:
+            other_vel.append(other.state.p_vel)
+        return np.concatenate([agent.state.p_vel] + [agent.state.p_pos] + entity_pos + other_pos + other_vel)
 
     def done(self, agent, world):
         return self.is_done
