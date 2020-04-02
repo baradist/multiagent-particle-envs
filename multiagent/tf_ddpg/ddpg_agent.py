@@ -23,12 +23,14 @@ class Agent(object):
         self.chkpt_dir = chkpt_dir
 
         self.actor = Actor(alpha, n_actions, 'Actor', input_dims, self.sess, layer1_size, layer2_size,
-                           env.action_space.high, chkpt_dir=chkpt_dir)
+                           # env.action_space.high, chkpt_dir=chkpt_dir)
+                           [1., 1., 1., 1., 1.], chkpt_dir=chkpt_dir)
         self.critic = Critic(beta, n_actions, 'Critic', input_dims, self.sess, layer1_size, layer2_size,
                              chkpt_dir=chkpt_dir)
 
         self.target_actor = Actor(alpha, n_actions, 'TargetActor', input_dims, self.sess, layer1_size, layer2_size,
-                                  env.action_space.high, chkpt_dir=chkpt_dir)
+                                  # env.action_space.high, chkpt_dir=chkpt_dir)
+                                  [1., 1., 1., 1., 1.], chkpt_dir=chkpt_dir)
         self.target_critic = Critic(beta, n_actions, 'TargetCritic', input_dims, self.sess, layer1_size, layer2_size,
                                     chkpt_dir=chkpt_dir)
 
