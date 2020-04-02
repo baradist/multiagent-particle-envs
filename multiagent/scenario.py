@@ -9,11 +9,16 @@ class BaseScenario(object):
     def make_world(self):
         raise NotImplementedError()
     # create initial conditions of the world
+
     def reset_world(self, world):
         raise NotImplementedError()
+
     def get_env(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
                  done_callback=None, shared_viewer=True):
         return MultiAgentEnv(world, reset_callback, reward_callback,
                  observation_callback, info_callback,
                  done_callback, shared_viewer)
+
+    def done(self, agent, world):
+        return False
