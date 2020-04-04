@@ -13,10 +13,12 @@ from multiagent.football.gate import Gate
 class FootballEnvironment(MultiAgentEnv):
     def __init__(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True):
+                 done_callback=None, shared_viewer=True,
+                 discrete_action_space=True):
         super(FootballEnvironment, self).__init__(world, reset_callback, reward_callback,
                                                   observation_callback, info_callback,
-                                                  done_callback, shared_viewer)
+                                                  done_callback, shared_viewer,
+                                                  discrete_action_space)
 
     def step(self, action_n):
             obs_n = []
