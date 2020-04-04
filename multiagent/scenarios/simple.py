@@ -11,12 +11,14 @@ class Scenario(BaseScenario):
             agent.name = 'agent %d' % i
             agent.collide = False
             agent.silent = True
+            agent.size = 0.1
         # add landmarks
         world.landmarks = [Landmark() for i in range(1)]
         for i, landmark in enumerate(world.landmarks):
             landmark.name = 'landmark %d' % i
             landmark.collide = False
             landmark.movable = False
+            landmark.size = 0.08
         # make initial conditions
         self.reset_world(world)
         return world
@@ -40,6 +42,10 @@ class Scenario(BaseScenario):
 
     def reward(self, agent, world):
         dist2 = np.sum(np.square(agent.state.p_pos - world.landmarks[0].state.p_pos))
+        is_close = np.square(agent.size + world.landmarks[0].size) >= dist2
+        if is_close:
+            return 10
+
         return -dist2
 
     def observation(self, agent, world):
