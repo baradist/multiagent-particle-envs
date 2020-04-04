@@ -65,6 +65,12 @@ if __name__ == '__main__':
         score_history.append(score)
 
         if agent.count % saving_step == 0:
+            print()
             print('episode ', agent.count, ', mean score %.2f' % np.mean(score_history[-saving_step:]),
                   'training 1000 games avg %.2f' % np.mean(score_history[-1000:]))
             agent.save_models()
+
+        if agent.count % (saving_step / 10) == 0:
+            print(' ' + str(agent.count) + ' ', end='')
+        if agent.count % (saving_step / 100) == 0:
+            print('.', end='')
