@@ -16,16 +16,18 @@ def goal(ball, gate):
 
 class Scenario(BaseScenario):
     def get_env(self, world, reset_callback=None, reward_callback=None,
-                 observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True):
+                observation_callback=None, info_callback=None,
+                done_callback=None, shared_viewer=True,
+                discrete_action_space=True):
         return FootballEnvironment(world, reset_callback, reward_callback,
-                 observation_callback, info_callback,
-                 done_callback, shared_viewer)
+                                   observation_callback, info_callback,
+                                   done_callback, shared_viewer,
+                                   discrete_action_space)
 
     def make_world(self):
         world = World()
         # add agents
-        num_agents = 2
+        num_agents = 3
         num_adversaries = 1
         world.num_agents = num_agents
 
@@ -68,10 +70,10 @@ class Scenario(BaseScenario):
         # random properties for landmarks
         # for i, landmark in enumerate(world.landmarks):
         #     landmark.color = np.array([0.75,0.75,0.75])
-        world.landmarks[0].color = np.array([0.75,0.25,0.25]) # self.ball
+        world.landmarks[0].color = np.array([0.75, 0.25, 0.25])  # self.ball
         # set random initial states
         for agent in world.agents:
-            agent.state.p_pos = np.random.uniform(-1,+1, world.dim_p)
+            agent.state.p_pos = np.random.uniform(-1, +1, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
 
