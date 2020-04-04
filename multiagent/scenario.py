@@ -15,10 +15,10 @@ class BaseScenario(object):
 
     def get_env(self, world, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True):
+                 done_callback=None, shared_viewer=True, discrete_action_space=True):
         return MultiAgentEnv(world, reset_callback, reward_callback,
                  observation_callback, info_callback,
-                 done_callback, shared_viewer)
+                 done_callback, shared_viewer, discrete_action_space=discrete_action_space)
 
     def done(self, agent, world):
         return False

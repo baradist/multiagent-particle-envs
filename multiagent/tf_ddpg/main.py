@@ -14,7 +14,7 @@ def make_env(scenario_name):
     world = scenario.make_world()
     # create multiagent environment
     env = scenario.get_env(world, scenario.reset_world, scenario.reward, scenario.observation,
-                           done_callback=scenario.done)
+                           done_callback=scenario.done, discrete_action_space=False)
     return env
 
 
