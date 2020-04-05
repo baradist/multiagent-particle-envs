@@ -2,8 +2,6 @@ import os
 import time
 
 import numpy as np
-import tensorflow.contrib.layers as layers
-from sympy.printing.tests.test_tensorflow import tf
 
 from multiagent import scenarios
 from multiagent.tf_ddpg.ddpg_agent import Agent
@@ -22,7 +20,6 @@ def make_env(scenario_name):
 
 def get_trainers(env, num_adversaries=0):  # TODO: num_adversaries
     trainers = []
-    # q_input = tf.concat(env.observation_space + env.action_space, 1)
     for i in range(num_adversaries):
         trainers.append(Agent("agent_%d" % i,
                               alpha=0.0001, beta=0.001, input_dims=env.observation_space[i].shape, tau=0.001, env=env,
@@ -75,13 +72,14 @@ if __name__ == '__main__':
                 trainer.remember(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], int(done_n[i]))
             obs_n = new_obs_n
 
-            for _, trainer in enumerate(trainers):
-                trainer.learn(trainers)
             if display:
                 env.render()
                 time.sleep(0.05)
 
             score += np.mean(rew_n)
+
+        for _, trainer in enumerate(trainers):  # TODO: how often should we learn?
+            trainer.learn(trainers)
 
         score_history.append(score)
 

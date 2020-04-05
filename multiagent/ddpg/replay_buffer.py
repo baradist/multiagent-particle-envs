@@ -32,7 +32,7 @@ class ReplayBuffer(object):
 
         return states, actions, rewards, new_sates, terminal
 
-    def sample_buffer(self, sample_index):
+    def sample_by_indexes(self, sample_index):
         states = self.state_memory[sample_index]
         new_sates = self.new_state_memory[sample_index]
         rewards = self.reward_memory[sample_index]

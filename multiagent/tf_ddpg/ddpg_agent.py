@@ -76,36 +76,48 @@ class Agent(object):
     def learn(self, trainers):
         if self.memory.mem_cntr < self.batch_size:
             return
-        # Sample a random minibatch of N transitions (si, ai, ri, si+1) from R
         sample_index = self.memory.make_index(self.batch_size)
         obs_n = []
         obs_next_n = []
         act_n = []
         for i, t in enumerate(trainers):
-            obs, act, rew, obs_next, done = t.memory.sample_buffer(sample_index)
+            # Sample a random minibatch of N transitions (si, ai, ri, si+1) from R
+            obs, act, rew, obs_next, done = t.memory.sample_by_indexes(sample_index)
             obs_n.append(obs)
             obs_next_n.append(obs_next)
             act_n.append(act)
 
-        state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
+        state, action, reward, new_state, done = self.memory.sample_by_indexes(sample_index)
         target_act_next_n = [t.target_actor.predict(obs_next_n[i]) for i, t in enumerate(trainers)]
-        # target_act_next = self.target_actor.predict(new_state)
-        critic_value_ = self.target_critic.predict(obs_next_n, target_act_next_n)  # TODO flatten
+
+        flatten_obs_n = np.concatenate([obs_n[0], obs_n[1]], axis=1)
+        flatten_target_act_next = np.concatenate([target_act_next_n[0], target_act_next_n[1]], axis=1)
+
+        target_q_next = self.target_critic.predict(flatten_obs_n, flatten_target_act_next)
 
         # Set yi = ri + γQ0(si+1, µ0(si+1|θµ0)|θQ0) )
         target_q = []
         for j in range(self.batch_size):
-            target_q.append(reward[j] + self.gamma * critic_value_[j] * done[j])  # done = 1 - (done from the env)
+            target_q.append(reward[j] + self.gamma * target_q_next[j] * done[j])  # done = 1 - (done from the env)
         target_q = np.reshape(target_q, (self.batch_size, 1))
         # train q network
         # Update critic by minimizing the loss: L = 1 N P i (yi − Q(si , ai |θ Q))2
-        _ = self.critic.train(obs_n, act_n, target_q)
+        flatten_act_n = np.concatenate([act_n[0], act_n[1]], axis=1)
+        _ = self.critic.train(flatten_obs_n, flatten_act_n, target_q)
         # train p network
         # Update the actor policy using the sampled policy gradient:
         # ∇θµ J ≈ 1 / N X i ∇aQ(s, a|θ Q)|s=si,a=µ(si)∇θµ µ(s|θ µ )|si
-        a_outs = self.actor.predict(state)
-        grads = self.critic.get_action_gradients(state, a_outs)
-        self.actor.train(state, grads[0])
+        # a_outs = self.actor.predict(state)  # TODO: remove hard code
+        a_outs_0 = trainers[0].actor.predict(obs_n[0])
+        a_outs_1 = trainers[1].actor.predict(obs_n[1])
+        flatten_a_outs_n = np.concatenate([a_outs_0, a_outs_1], axis=1)
+        grads = self.critic.get_action_gradients(flatten_obs_n, flatten_a_outs_n)
+        split = np.split(grads[0], [3], axis=1)
+        if self.actor.n_actions == 2:  # TODO: remove hard code
+            idx = 1
+        else:
+            idx = 0
+        self.actor.train(state, split[idx])
         # Update the target networks:
         # θ Q0 ← τθQ + (1 − τ )θQ
         # 0 θ µ 0 ← τθµ + (1 − τ )θ µ 0
