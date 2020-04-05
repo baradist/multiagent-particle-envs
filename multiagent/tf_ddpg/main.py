@@ -18,28 +18,44 @@ def make_env(scenario_name):
     return env
 
 
+def get_trainers(env, num_adversaries=0):  # TODO: num_adversaries
+    trainers = []
+    for i in range(num_adversaries):
+        trainers.append(Agent("agent_%d" % i,
+                              alpha=0.0001, beta=0.001, input_dims=env.observation_space[i].shape, tau=0.001, env=env,
+                              n_actions=env.action_space[i].shape[0],
+                              chkpt_dir='tmp/ddpg/' + env_name + '/' + "agent_%d" % i,
+                              action_bound=env.action_space[i].high))
+    for i in range(num_adversaries, env.n):
+        trainers.append(Agent("agent_%d" % i,
+                              alpha=0.0001, beta=0.001, input_dims=env.observation_space[i].shape, tau=0.001, env=env,
+                              n_actions=env.action_space[i].shape[0],
+                              chkpt_dir='tmp/ddpg/' + env_name + '/' + "agent_%d" % i,
+                              action_bound=env.action_space[i].high))
+    for _, trainer in enumerate(trainers):
+        trainer.load_models()
+
+    return trainers
+
+
 if __name__ == '__main__':
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
     # variables
-    env_name = 'simple'
+    env_name = 'simple_speaker_listener'
     env = make_env(env_name)
-    max_episode_len = 60
-    saving_step = 500
-    num_episodes = 20000
+    max_episode_len = 50
+    saving_step = 100
+    num_episodes = 60000
     display = True
-
-    obs_shape_n = [env.observation_space[i].shape for i in range(env.n)]
-    agent = Agent(alpha=0.0001, beta=0.001, input_dims=[4], tau=0.001, env=env, n_actions=5,
-                  chkpt_dir='tmp/ddpg/' + env_name)
-    trainers = [agent]
 
     np.random.seed(0)
 
-    agent.load_models()
+    trainers = get_trainers(env)
 
     score_history = []
+    agent = trainers[0]  # TODO
     while agent.count < num_episodes or display:
         agent.count += 1
         obs_n = env.reset()
@@ -51,11 +67,12 @@ if __name__ == '__main__':
             action_n = [agent.choose_action(obs) for agent, obs in zip(trainers, obs_n)]
             new_obs_n, rew_n, done_n, info_n = env.step(action_n)
             done = all(done_n)
-            for i, agent in enumerate(trainers):
-                agent.remember(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], int(done_n[i]))
+            for i, trainer in enumerate(trainers):
+                trainer.remember(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], int(done_n[i]))
             obs_n = new_obs_n
 
-            agent.learn()
+            for _, trainer in enumerate(trainers):
+                trainer.learn()
             if display:
                 env.render()
                 time.sleep(0.05)
@@ -68,7 +85,8 @@ if __name__ == '__main__':
             print()
             print('episode ', agent.count, ', mean score %.2f' % np.mean(score_history[-saving_step:]),
                   'training 1000 games avg %.2f' % np.mean(score_history[-1000:]))
-            agent.save_models()
+            for _, trainer in enumerate(trainers):
+                trainer.save_models()
 
         if agent.count % (saving_step / 10) == 0:
             print(' ' + str(agent.count) + ' ', end='')

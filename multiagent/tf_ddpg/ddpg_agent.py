@@ -11,8 +11,9 @@ from multiagent.tf_ddpg.critic import Critic
 
 
 class Agent(object):
-    def __init__(self, alpha, beta, input_dims, tau, env, gamma=0.99, n_actions=2, max_size=1000000,
-                 layer1_size=400, layer2_size=300, batch_size=64, chkpt_dir='tmp/ddpg'):
+    def __init__(self, name, alpha, beta, input_dims, tau, env, gamma=0.99, n_actions=2, max_size=1000000,
+                 layer1_size=400, layer2_size=300, batch_size=64, chkpt_dir='tmp/ddpg', action_bound=None):
+        self.name = name
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -22,16 +23,14 @@ class Agent(object):
         Path(chkpt_dir).mkdir(parents=True, exist_ok=True)
         self.chkpt_dir = chkpt_dir
 
-        self.actor = Actor(alpha, n_actions, 'Actor', input_dims, self.sess, layer1_size, layer2_size,
-                           # env.action_space.high, chkpt_dir=chkpt_dir)
-                           [1., 1., 1., 1., 1.], chkpt_dir=chkpt_dir)
-        self.critic = Critic(beta, n_actions, 'Critic', input_dims, self.sess, layer1_size, layer2_size,
+        self.actor = Actor(alpha, n_actions, self.name + 'Actor', input_dims, self.sess, layer1_size, layer2_size,
+                           action_bound, chkpt_dir=chkpt_dir)
+        self.critic = Critic(beta, n_actions, self.name + 'Critic', input_dims, self.sess, layer1_size, layer2_size,
                              chkpt_dir=chkpt_dir)
 
-        self.target_actor = Actor(alpha, n_actions, 'TargetActor', input_dims, self.sess, layer1_size, layer2_size,
-                                  # env.action_space.high, chkpt_dir=chkpt_dir)
-                                  [1., 1., 1., 1., 1.], chkpt_dir=chkpt_dir)
-        self.target_critic = Critic(beta, n_actions, 'TargetCritic', input_dims, self.sess, layer1_size, layer2_size,
+        self.target_actor = Actor(alpha, n_actions, self.name + 'TargetActor', input_dims, self.sess, layer1_size, layer2_size,
+                                  action_bound, chkpt_dir=chkpt_dir)
+        self.target_critic = Critic(beta, n_actions, self.name + 'TargetCritic', input_dims, self.sess, layer1_size, layer2_size,
                                     chkpt_dir=chkpt_dir)
 
         self.noise = OUActionNoise(mu=np.zeros(n_actions))
