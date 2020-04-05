@@ -48,7 +48,8 @@ if __name__ == '__main__':
     max_episode_len = 50
     saving_step = 100
     num_episodes = 60000
-    display = True
+    display = False
+    # display = True
 
     np.random.seed(0)
 
@@ -71,13 +72,14 @@ if __name__ == '__main__':
                 trainer.remember(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], int(done_n[i]))
             obs_n = new_obs_n
 
-            for _, trainer in enumerate(trainers):
-                trainer.learn()
             if display:
                 env.render()
                 time.sleep(0.05)
 
             score += np.mean(rew_n)
+
+        for _, trainer in enumerate(trainers):  # TODO: how often should we learn?
+            trainer.learn(trainers)
 
         score_history.append(score)
 
