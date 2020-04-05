@@ -76,20 +76,27 @@ class Agent(object):
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
+        # Sample a random minibatch of N transitions (si, ai, ri, si+1) from R
         state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
         critic_value_ = self.target_critic.predict(new_state, self.target_actor.predict(new_state))
 
-        target = []
+        # Set yi = ri + γQ0(si+1, µ0(si+1|θµ0)|θQ0) )
+        target_q = []
         for j in range(self.batch_size):
-            target.append(reward[j] + self.gamma * critic_value_[j] * done[j])  # done = 1 - (done from the env)
-        target = np.reshape(target, (self.batch_size, 1))
-
-        _ = self.critic.train(state, action, target)
-
+            target_q.append(reward[j] + self.gamma * critic_value_[j] * done[j])  # done = 1 - (done from the env)
+        target_q = np.reshape(target_q, (self.batch_size, 1))
+        # train q network
+        # Update critic by minimizing the loss: L = 1 N P i (yi − Q(si , ai |θ Q))2
+        _ = self.critic.train(state, action, target_q)
+        # train p network
+        # Update the actor policy using the sampled policy gradient:
+        # ∇θµ J ≈ 1 / N X i ∇aQ(s, a|θ Q)|s=si,a=µ(si)∇θµ µ(s|θ µ )|si
         a_outs = self.actor.predict(state)
         grads = self.critic.get_action_gradients(state, a_outs)
         self.actor.train(state, grads[0])
-
+        # Update the target networks:
+        # θ Q0 ← τθQ + (1 − τ )θQ
+        # 0 θ µ 0 ← τθµ + (1 − τ )θ µ 0
         self.update_network_parameters()
 
     def save_models(self):
