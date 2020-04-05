@@ -25,12 +25,12 @@ class Agent(object):
 
         self.actor = Actor(alpha, n_actions, self.name + 'Actor', input_dims, self.sess, layer1_size, layer2_size,
                            action_bound, chkpt_dir=chkpt_dir)
-        self.critic = Critic(beta, n_actions, self.name + 'Critic', input_dims, self.sess, layer1_size, layer2_size,
+        self.critic = Critic(beta, 5, self.name + 'Critic', [14], self.sess, layer1_size, layer2_size,
                              chkpt_dir=chkpt_dir)
 
         self.target_actor = Actor(alpha, n_actions, self.name + 'TargetActor', input_dims, self.sess, layer1_size, layer2_size,
                                   action_bound, chkpt_dir=chkpt_dir)
-        self.target_critic = Critic(beta, n_actions, self.name + 'TargetCritic', input_dims, self.sess, layer1_size, layer2_size,
+        self.target_critic = Critic(beta, 5, self.name + 'TargetCritic', [14], self.sess, layer1_size, layer2_size,
                                     chkpt_dir=chkpt_dir)
 
         self.noise = OUActionNoise(mu=np.zeros(n_actions))
@@ -73,12 +73,24 @@ class Agent(object):
 
         return mu_prime[0]
 
-    def learn(self):
+    def learn(self, trainers):
         if self.memory.mem_cntr < self.batch_size:
             return
         # Sample a random minibatch of N transitions (si, ai, ri, si+1) from R
+        sample_index = self.memory.make_index(self.batch_size)
+        obs_n = []
+        obs_next_n = []
+        act_n = []
+        for i, t in enumerate(trainers):
+            obs, act, rew, obs_next, done = t.memory.sample_buffer(sample_index)
+            obs_n.append(obs)
+            obs_next_n.append(obs_next)
+            act_n.append(act)
+
         state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
-        critic_value_ = self.target_critic.predict(new_state, self.target_actor.predict(new_state))
+        target_act_next_n = [t.target_actor.predict(obs_next_n[i]) for i, t in enumerate(trainers)]
+        # target_act_next = self.target_actor.predict(new_state)
+        critic_value_ = self.target_critic.predict(obs_next_n, target_act_next_n)  # TODO flatten
 
         # Set yi = ri + γQ0(si+1, µ0(si+1|θµ0)|θQ0) )
         target_q = []
@@ -87,7 +99,7 @@ class Agent(object):
         target_q = np.reshape(target_q, (self.batch_size, 1))
         # train q network
         # Update critic by minimizing the loss: L = 1 N P i (yi − Q(si , ai |θ Q))2
-        _ = self.critic.train(state, action, target_q)
+        _ = self.critic.train(obs_n, act_n, target_q)
         # train p network
         # Update the actor policy using the sampled policy gradient:
         # ∇θµ J ≈ 1 / N X i ∇aQ(s, a|θ Q)|s=si,a=µ(si)∇θµ µ(s|θ µ )|si

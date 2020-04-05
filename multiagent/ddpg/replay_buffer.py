@@ -31,3 +31,16 @@ class ReplayBuffer(object):
         terminal = self.terminal_memory[batch]
 
         return states, actions, rewards, new_sates, terminal
+
+    def sample_buffer(self, sample_index):
+        states = self.state_memory[sample_index]
+        new_sates = self.new_state_memory[sample_index]
+        rewards = self.reward_memory[sample_index]
+        actions = self.action_memory[sample_index]
+        terminal = self.terminal_memory[sample_index]
+
+        return states, actions, rewards, new_sates, terminal
+
+    def make_index(self, batch_size):
+        max_mem = min(self.mem_cntr, self.mem_size)
+        return np.random.choice(max_mem, batch_size)
