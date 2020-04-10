@@ -77,6 +77,11 @@ class Scenario(BaseScenario):
         for entity in world.landmarks:
             entity_pos.append(entity.state.p_pos - agent.state.p_pos)
 
+        # get colors of all entities in this agent's reference frame
+        entity_colors = []
+        for entity in world.landmarks:
+            entity_colors.append(entity.color)
+
         # communication of all other agents
         comm = []
         for other in world.agents:
@@ -88,5 +93,5 @@ class Scenario(BaseScenario):
             return np.concatenate([goal_color])
         # listener
         if agent.silent:
-            return np.concatenate([agent.state.p_vel] + entity_pos + comm)
+            return np.concatenate([agent.state.p_vel] + entity_pos + comm + entity_colors)
             
