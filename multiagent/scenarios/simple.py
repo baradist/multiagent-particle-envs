@@ -54,3 +54,10 @@ class Scenario(BaseScenario):
         for entity in world.landmarks:
             entity_pos.append(entity.state.p_pos - agent.state.p_pos)
         return np.concatenate([agent.state.p_vel] + entity_pos)
+
+    def done(self, agent, world):
+        for p in range(world.dim_p):
+            x = abs(agent.state.p_pos[p])
+            if (x>1.5):
+                return True
+        return False
