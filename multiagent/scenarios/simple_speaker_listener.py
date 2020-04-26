@@ -58,7 +58,7 @@ class Scenario(BaseScenario):
 
     def benchmark_data(self, agent, world):
         # returns data for benchmarking purposes
-        return self.reward(agent, reward)
+        return self.reward(agent, world)
 
     def reward(self, agent, world):
         # squared distance from listener to landmark
@@ -99,4 +99,3 @@ class Scenario(BaseScenario):
         # listener
         if agent.silent:
             return np.concatenate([agent.state.p_vel] + entity_pos + comm + entity_colors)
-            
