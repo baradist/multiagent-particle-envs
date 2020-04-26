@@ -56,6 +56,9 @@ class Scenario(BaseScenario):
         if agent.goal_a is None or agent.goal_b is None:
             return 0.0
         dist2 = np.sum(np.square(agent.goal_a.state.p_pos - agent.goal_b.state.p_pos))
+        is_close = np.square(agent.goal_a.size + agent.goal_b.size) >= dist2
+        if is_close:
+            return 10
         return -dist2
 
     def observation(self, agent, world):
@@ -77,5 +80,4 @@ class Scenario(BaseScenario):
         for other in world.agents:
             if other is agent: continue
             comm.append(other.state.c)
-        return np.concatenate([agent.state.p_vel] + entity_pos + [goal_color[1]] + comm)
-            
+        return np.concatenate([agent.state.p_vel] + entity_pos + [goal_color[1]] + entity_color + comm)
